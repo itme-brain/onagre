@@ -3,7 +3,7 @@ use std::process::exit;
 
 use iced::alignment::{Horizontal, Vertical};
 use iced::futures::channel::mpsc::{Sender, TrySendError};
-use iced::keyboard::KeyCode;
+use iced::keyboard::{KeyCode, Modifiers};
 use iced::widget::{column, container, scrollable, text_input, Column, Container, Row, Text};
 use iced::window::PlatformSpecific;
 use iced::{
@@ -80,7 +80,7 @@ pub struct Onagre<'a> {
 pub enum Message {
     Loading,
     InputChanged(String),
-    KeyboardEvent(KeyCode),
+    KeyboardEvent(KeyCode, Option<Modifiers>),
     SubscriptionResponse(SubscriptionMessage),
     Unfocused,
 }
@@ -127,7 +127,7 @@ impl Application for Onagre<'_> {
         match message {
             Message::Loading => text_input::focus(INPUT_ID.clone()),
             Message::InputChanged(input) => self.on_input_changed(input),
-            Message::KeyboardEvent(event) => self.handle_input(event),
+            Message::KeyboardEvent(event, modifiers) => self.handle_input(event, modifiers),
             Message::SubscriptionResponse(message) => self.on_pop_launcher_message(message),
             Message::Unfocused => {
                 if THEME.exit_unfocused {
@@ -399,24 +399,24 @@ impl Onagre<'_> {
         exit(0);
     }
 
-    fn handle_input(&mut self, key_code: KeyCode) -> Command<Message> {
-        match key_code {
-            KeyCode::Up => {
+    fn handle_input(&mut self, key_code: KeyCode, modifier: Option<Modifiers>) -> Command<Message> {
+        match (key_code, modifier) {
+            (KeyCode::Tab, Some(Modifiers::SHIFT)) => {
                 trace!("Selected line : {:?}", self.selected());
                 return self.dec_selected();
             }
-            KeyCode::Down => {
+            (KeyCode::Tab, _) => {
                 trace!("Selected line : {:?}", self.selected());
                 return self.inc_selected();
             }
-            KeyCode::Enter => return self.on_execute(),
-            KeyCode::Tab => {
+            (KeyCode::Enter, Some(Modifiers::SHIFT)) => {
                 if let Some(selected) = self.selected() {
                     self.pop_request(Request::Complete(selected as u32))
                         .expect("Unable to send request to pop-launcher");
                 }
             }
-            KeyCode::Escape => {
+            (KeyCode::Enter, _) => return self.on_execute(),
+            (KeyCode::Escape, _) => {
                 exit(0);
             }
             _ => {}
@@ -621,9 +621,9 @@ impl Onagre<'_> {
         subscription::events_with(|event, _status| match event {
             Event::Window(window::Event::Unfocused) => Some(Message::Unfocused),
             Event::Keyboard(iced::keyboard::Event::KeyPressed {
-                modifiers: _,
+                modifiers,
                 key_code,
-            }) => Some(Message::KeyboardEvent(key_code)),
+            }) => Some(Message::KeyboardEvent(key_code, Some(modifiers))),
             _ => None,
         })
     }
