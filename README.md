@@ -58,8 +58,9 @@ cargo install --git https://github.com/oknozor/onagre
 
 | Key             | Action                       | 
 |:----------------|:-----------------------------|
-| `Arrow up/down` | Change selection             |
-| `Tab`           | Autocomplete (in files mode) | 
+| `Tab`           | Move Down                    | 
+| `Shift+Tab`     | Move Up                      | 
+| `Shift+Enter`   | Autocomplete (in files mode) | 
 | `Esc`           | Quit without launching       | 
 | `Enter`         | Launch selection             | 
 
